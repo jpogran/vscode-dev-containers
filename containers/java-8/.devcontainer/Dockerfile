@@ -5,13 +5,20 @@
 
 FROM openjdk:8-jdk
 
-# Configure apt
+# Avoid warnings by switching to noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-    && apt-get -y install --no-install-recommends apt-utils 2>&1
+# Set the default shell to bash rather than sh
+ENV SHELL /bin/bash
 
-# Verify git, needed tools installed
-RUN apt-get -y install git procps curl lsb-release
+# Configure apt and install packages
+RUN apt-get update \
+    && apt-get -y install --no-install-recommends apt-utils 2>&1 \
+    #
+    # Verify git, needed tools installed
+    && apt-get -y install git procps curl lsb-release \
+    #
+    # Allow for a consistant java home location for settings - image is changing over time
+    && if [ ! -d "/docker-java-home" ]; then ln -s "${JAVA_HOME}" /docker-java-home; fi 
 
 #-------------------Uncomment the following steps to install Maven CLI Tools----------------------------------
 # ARG MAVEN_VERSION=3.6.1
@@ -43,10 +50,6 @@ RUN apt-get -y install git procps curl lsb-release
 RUN apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
+
+# Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=dialog
-
-# Allow for a consistant java home location for settings - image is changing over time
-RUN if [ ! -d "/docker-java-home" ]; then ln -s "${JAVA_HOME}" /docker-java-home; fi
-
-# Set the default shell to bash instead of sh
-ENV SHELL /bin/bash
